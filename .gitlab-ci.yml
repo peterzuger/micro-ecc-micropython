@@ -1,0 +1,62 @@
+image: peterzuger/arch-dev
+
+stages:
+  - prepare
+  - prebuild
+  - build
+  - test
+
+# global variables
+variables:
+  CMODULES: $CI_PROJECT_DIR/..
+
+fetch-micropython:
+  stage: prepare
+  script:
+    - git clone --recurse-submodules https://github.com/micropython/micropython.git
+  artifacts:
+    expose_as: 'micropython-repo'
+    paths:
+      - micropython/
+    exclude:
+      - micropython/.git/**/*
+      - micropython/lib/pico-sdk/**/*
+      - micropython/lib/tinyusb/**/*
+
+mpy-cross:
+  stage: prebuild
+  script:
+    - make -C micropython/mpy-cross
+  artifacts:
+    expose_as: 'mpy-cross'
+    paths:
+      - micropython/mpy-cross/build/mpy-cross
+  dependencies:
+    - fetch-micropython
+
+unix:
+  stage: build
+  script:
+    - make -C micropython/ports/unix USER_C_MODULES=$CMODULES CFLAGS_EXTRA="-DMODULE_MICRO_ECC_ENABLED=1" FROZEN_MANIFEST=$CMODULES/micro-ecc-micropython/tests/manifest.py
+  artifacts:
+    expose_as: 'micropython'
+    paths:
+      - micropython/ports/unix/build-standard/micropython
+  dependencies:
+    - mpy-cross
+    - fetch-micropython
+
+stm32:
+  stage: build
+  script:
+    - make -C micropython/ports/stm32 USER_C_MODULES=$CMODULES CFLAGS_EXTRA="-DMODULE_MICRO_ECC_ENABLED=1"
+  dependencies:
+    - mpy-cross
+    - fetch-micropython
+
+unix-test:
+  stage: test
+  script:
+    - micropython/ports/unix/build-standard/micropython -m unittest tests/test_uECC
+  dependencies:
+    - unix
