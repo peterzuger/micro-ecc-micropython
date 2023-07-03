@@ -16,6 +16,8 @@ MESSAGES = [
     b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
 ]
 
+TEST_COUNT = 100
+
 
 class KeyTestVector:
     def __init__(self, curve, private_key, public_key, success):
@@ -151,15 +153,14 @@ class uECCTest(unittest.TestCase):
 
         for curve in uECC.curves():
             c = uECC.Curve(curve)
+            public_key_size = c.public_key_size()
+            private_key_size = c.private_key_size()
 
-            for _ in range(500):
+            for _ in range(TEST_COUNT):
                 public_key, private_key = c.make_key()
 
                 self.assertIsInstance(public_key, bytes)
                 self.assertIsInstance(private_key, bytes)
-
-                public_key_size = c.public_key_size()
-                private_key_size = c.private_key_size()
 
                 self.assertEqual(public_key_size, len(public_key))
                 self.assertEqual(private_key_size, len(private_key))
@@ -172,14 +173,14 @@ class uECCTest(unittest.TestCase):
             c = uECC.Curve(curve)
             curve_size = c.curve_size()
 
-            for _ in range(50):
+            for _ in range(TEST_COUNT):
                 public_key, private_key = c.make_key()
 
-                for _ in range(50):
-                    secret = c.shared_secret(public_key, private_key)
+                secret = c.shared_secret(public_key, private_key)
 
-                    self.assertIsInstance(secret, bytes)
-                    self.assertEqual(curve_size, len(secret))
+                self.assertIsInstance(secret, bytes)
+                self.assertEqual(curve_size, len(secret))
+
 
     if hasattr(uECC.Curve, "compress"):
 
@@ -191,7 +192,7 @@ class uECCTest(unittest.TestCase):
                 c = uECC.Curve(curve)
                 curve_size = c.curve_size()
 
-                for _ in range(50):
+                for _ in range(TEST_COUNT):
                     public_key, _ = c.make_key()
 
                     compressed = c.compress(public_key)
@@ -207,7 +208,7 @@ class uECCTest(unittest.TestCase):
                 c = uECC.Curve(curve)
                 curve_size = c.curve_size()
 
-                for _ in range(50):
+                for _ in range(TEST_COUNT):
                     public_key, _ = c.make_key()
 
                     compressed = c.compress(public_key)
@@ -225,7 +226,7 @@ class uECCTest(unittest.TestCase):
         for curve in uECC.curves():
             c = uECC.Curve(curve)
 
-            for _ in range(50):
+            for _ in range(TEST_COUNT):
                 public_key, _ = c.make_key()
 
                 valid = c.valid_public_key(public_key)
@@ -235,7 +236,7 @@ class uECCTest(unittest.TestCase):
 
             # test mostly invalid keys
             valid_total = 0
-            for _ in range(50):
+            for _ in range(TEST_COUNT):
                 public_key, _ = c.make_key()
 
                 idx = random.randint(0, len(public_key) - 1)
@@ -251,7 +252,7 @@ class uECCTest(unittest.TestCase):
                 if valid:
                     valid_total += 1
 
-            self.assertLessEqual(valid_total, 10)
+            self.assertLessEqual(valid_total, TEST_COUNT // 10)
 
     def test_compute_public_key(self):
         # uECC.Curve(curve)
@@ -260,7 +261,7 @@ class uECCTest(unittest.TestCase):
         for curve in uECC.curves():
             c = uECC.Curve(curve)
 
-            for _ in range(50):
+            for _ in range(TEST_COUNT):
                 public_key, private_key = c.make_key()
 
                 public_key2 = c.compute_public_key(private_key)
