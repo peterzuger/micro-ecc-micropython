@@ -95,6 +95,10 @@ class uECCTest(unittest.TestCase):
     def test_curves(self):
         # uECC.curves()
 
+        curves = uECC.curves()
+
+        self.assertIsInstance(curves, tuple)
+
         for e in uECC.curves():
             self.assertIsInstance(e, str)
 
