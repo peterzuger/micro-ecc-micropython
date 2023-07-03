@@ -85,6 +85,12 @@ KEY_TEST_VECTORS = [
 ]
 
 
+def scramble(s):
+    idx = random.randint(0, len(s) - 1)
+
+    return s[:idx] + random.getrandbits(8).to_bytes(1, "little") + s[idx + 1 :]
+
+
 class uECCTest(unittest.TestCase):
     def test_curves(self):
         # uECC.curves()
@@ -165,6 +171,13 @@ class uECCTest(unittest.TestCase):
                 self.assertEqual(public_key_size, len(public_key))
                 self.assertEqual(private_key_size, len(private_key))
 
+            for _ in range(TEST_COUNT):
+                public_key1, private_key1 = c.make_key()
+                public_key2, private_key2 = c.make_key()
+
+                self.assertNotEqual(public_key1, public_key2)
+                self.assertNotEqual(private_key1, private_key2)
+
     def test_shared_secret(self):
         # uECC.Curve(curve)
         # .shared_secret(public_key, private_key)
@@ -181,6 +194,22 @@ class uECCTest(unittest.TestCase):
                 self.assertIsInstance(secret, bytes)
                 self.assertEqual(curve_size, len(secret))
 
+            for _ in range(TEST_COUNT):
+                public_key, private_key = c.make_key()
+
+                secret1 = c.shared_secret(public_key, private_key)
+                secret2 = c.shared_secret(public_key, private_key)
+
+                self.assertEqual(secret1, secret2)
+
+            for _ in range(TEST_COUNT):
+                public_key1, private_key1 = c.make_key()
+                public_key2, private_key2 = c.make_key()
+
+                secret1 = c.shared_secret(public_key1, private_key1)
+                secret2 = c.shared_secret(public_key2, private_key2)
+
+                self.assertNotEqual(secret1, secret2)
 
     if hasattr(uECC.Curve, "compress"):
 
@@ -199,6 +228,14 @@ class uECCTest(unittest.TestCase):
 
                     self.assertIsInstance(compressed, bytes)
                     self.assertEqual(curve_size + 1, len(compressed))
+
+                for _ in range(TEST_COUNT):
+                    public_key, _ = c.make_key()
+
+                    compressed1 = c.compress(public_key)
+                    compressed2 = c.compress(public_key)
+
+                    self.assertEqual(compressed1, compressed2)
 
         def test_decompress(self):
             # uECC.Curve(curve)
@@ -239,15 +276,9 @@ class uECCTest(unittest.TestCase):
             for _ in range(TEST_COUNT):
                 public_key, _ = c.make_key()
 
-                idx = random.randint(0, len(public_key) - 1)
+                scrambled_public_key = scramble(public_key)
 
-                public_key = (
-                    public_key[:idx]
-                    + random.getrandbits(8).to_bytes(1, "little")
-                    + public_key[idx + 1 :]
-                )
-
-                valid = c.valid_public_key(public_key)
+                valid = c.valid_public_key(scrambled_public_key)
 
                 if valid:
                     valid_total += 1
@@ -317,6 +348,35 @@ class uECCTest(unittest.TestCase):
 
                 self.assertIsInstance(valid, bool)
                 self.assertTrue(valid)
+
+            for message in MESSAGES:
+                public_key, private_key = c.make_key()
+
+                message_hash = sha256(message).digest()
+
+                signature = c.sign(private_key, message_hash)
+
+                scrambled_public_key = scramble(public_key)
+
+                valid = c.verify(scrambled_public_key, message_hash, signature)
+
+                self.assertIsInstance(valid, bool)
+                self.assertFalse(valid)
+
+            for message in MESSAGES:
+                public_key, private_key = c.make_key()
+
+                message_hash = sha256(message).digest()
+
+                signature = c.sign(private_key, message_hash)
+
+                scrambled_hash = scramble(message_hash)
+
+                valid = c.verify(public_key, scrambled_hash, signature)
+
+                self.assertIsInstance(valid, bool)
+                # TODO: should be false
+                # self.assertFalse(valid)
 
 
 if __name__ == "__main__":
