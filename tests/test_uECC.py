@@ -90,6 +90,23 @@ class uECCTest(unittest.TestCase):
         for e in uECC.curves():
             self.assertIsInstance(e, str)
 
+    def test_Curve(self):
+        # uECC.Curve(curve)
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
+            self.assertIsInstance(c, uECC.Curve)
+
+        for curve in ("", "secp") + tuple(x + " " for x in uECC.curves()):
+            with self.assertRaises(ValueError) as e:
+                c = uECC.Curve(curve)
+                # Unknown curve specified: %s
+
+        for curve in (1, None, uECC.curves):
+            with self.assertRaises(TypeError) as e:
+                c = uECC.Curve(curve)
+                # can't convert '' object to str implicitly
+
     def test_curve_size(self):
         # uECC.Curve(curve)
         # .curve_size()
