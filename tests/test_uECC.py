@@ -104,15 +104,22 @@ class uECCTest(unittest.TestCase):
 
     def test_Curve(self):
         # uECC.Curve(curve)
+
         for curve in uECC.curves():
             c = uECC.Curve(curve)
 
             self.assertIsInstance(c, uECC.Curve)
 
+    def test_Curve_invalid_string(self):
+        # uECC.Curve(curve)
+
         for curve in ("", "secp") + tuple(x + " " for x in uECC.curves()):
             with self.assertRaises(ValueError) as e:
                 c = uECC.Curve(curve)
                 # Unknown curve specified: %s
+
+    def test_Curve_invalid_type(self):
+        # uECC.Curve(curve)
 
         for curve in (1, None, uECC.curves):
             with self.assertRaises(TypeError) as e:
@@ -175,6 +182,13 @@ class uECCTest(unittest.TestCase):
                 self.assertEqual(public_key_size, len(public_key))
                 self.assertEqual(private_key_size, len(private_key))
 
+    def test_make_key_inequality(self):
+        # uECC.Curve(curve)
+        # .make_key()
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
             for _ in range(TEST_COUNT):
                 public_key1, private_key1 = c.make_key()
                 public_key2, private_key2 = c.make_key()
@@ -198,6 +212,13 @@ class uECCTest(unittest.TestCase):
                 self.assertIsInstance(secret, bytes)
                 self.assertEqual(curve_size, len(secret))
 
+    def test_shared_secret_same_key(self):
+        # uECC.Curve(curve)
+        # .shared_secret(public_key, private_key)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
             for _ in range(TEST_COUNT):
                 public_key, private_key = c.make_key()
 
@@ -205,6 +226,13 @@ class uECCTest(unittest.TestCase):
                 secret2 = c.shared_secret(public_key, private_key)
 
                 self.assertEqual(secret1, secret2)
+
+    def test_shared_secret_different_key(self):
+        # uECC.Curve(curve)
+        # .shared_secret(public_key, private_key)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
 
             for _ in range(TEST_COUNT):
                 public_key1, private_key1 = c.make_key()
@@ -232,6 +260,13 @@ class uECCTest(unittest.TestCase):
 
                     self.assertIsInstance(compressed, bytes)
                     self.assertEqual(curve_size + 1, len(compressed))
+
+        def test_compress_equality(self):
+            # uECC.Curve(curve)
+            # .compress(public_key)
+
+            for curve in uECC.curves():
+                c = uECC.Curve(curve)
 
                 for _ in range(TEST_COUNT):
                     public_key, _ = c.make_key()
@@ -275,6 +310,13 @@ class uECCTest(unittest.TestCase):
                 self.assertIsInstance(valid, bool)
                 self.assertTrue(valid)
 
+    def test_valid_public_key_invalid(self):
+        # uECC.Curve(curve)
+        # .valid_public_key(public_key)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
             # test mostly invalid keys
             valid_total = 0
             for _ in range(TEST_COUNT):
@@ -303,6 +345,13 @@ class uECCTest(unittest.TestCase):
 
                 self.assertIsInstance(public_key2, bytes)
                 self.assertEqual(public_key, public_key2)
+
+    def test_compute_public_key_test_vectors(self):
+        # uECC.Curve(curve)
+        # .compute_public_key(private_key)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
 
         for vector in KEY_TEST_VECTORS:
             c = uECC.Curve(vector.curve)
@@ -353,6 +402,13 @@ class uECCTest(unittest.TestCase):
                 self.assertIsInstance(valid, bool)
                 self.assertTrue(valid)
 
+    def test_verify_invalid_key(self):
+        # uECC.Curve(curve)
+        # .verify(public_key, message_hash, signature)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
             for message in MESSAGES:
                 public_key, private_key = c.make_key()
 
@@ -367,6 +423,14 @@ class uECCTest(unittest.TestCase):
                 self.assertIsInstance(valid, bool)
                 self.assertFalse(valid)
 
+    @unittest.expectedFailure
+    def test_verify_invalid_hash(self):
+        # uECC.Curve(curve)
+        # .verify(public_key, message_hash, signature)
+
+        for curve in uECC.curves():
+            c = uECC.Curve(curve)
+
             for message in MESSAGES:
                 public_key, private_key = c.make_key()
 
@@ -380,7 +444,7 @@ class uECCTest(unittest.TestCase):
 
                 self.assertIsInstance(valid, bool)
                 # TODO: should be false
-                # self.assertFalse(valid)
+                self.assertFalse(valid)
 
 
 if __name__ == "__main__":
