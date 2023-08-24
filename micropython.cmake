@@ -16,4 +16,8 @@ target_include_directories(usermod_micro_ecc INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/micro-ecc/
 )
 
+target_compile_options(usermod_micro_ecc INTERFACE
+  -Wno-unused-variable
+)
+
 target_link_libraries(usermod INTERFACE usermod_micro_ecc)

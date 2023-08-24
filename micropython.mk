@@ -8,3 +8,4 @@ ifneq (,$(findstring -DMODULE_MICRO_ECC_ENABLED=1,$(CFLAGS_EXTRA)))
 endif
 
 CFLAGS_USERMOD += -I$(MICRO_ECC_MOD_DIR)/micro-ecc/
+CFLAGS_USERMOD += -Wno-unused-variable

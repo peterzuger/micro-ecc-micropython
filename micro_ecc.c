@@ -40,6 +40,9 @@
 
 #include "uECC.h"
 
+#define uECC_PUBLIC_KEY_BYTES ((size_t)(uECC_BYTES * 2))
+#define uECC_PRIVATE_KEY_BYTES ((size_t)(uECC_BYTES))
+
 static void micro_ecc_mp_obj_get_data(mp_obj_t data_p, const uint8_t** data, size_t* size){
     if(mp_obj_is_type(data_p, &mp_type_bytearray) || mp_obj_is_type(data_p, &mp_type_memoryview)){
         *data = (const uint8_t*)((mp_obj_array_t*)data_p)->items;
@@ -54,60 +57,52 @@ static void micro_ecc_mp_obj_get_data(mp_obj_t data_p, const uint8_t** data, siz
 typedef struct _micro_ecc_Curve_obj_t{
     // base represents some basic information, like type
     mp_obj_base_t base;
-
-    uECC_Curve curve;
-    size_t curve_size;
 }micro_ecc_Curve_obj_t;
 
 
 mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type, size_t n_args, size_t n_kw, const mp_obj_t* args);
 STATIC void micro_ecc_Curve_print(const mp_print_t* print, mp_obj_t self_in, mp_print_kind_t kind);
-STATIC mp_obj_t micro_ecc_Curve_curve_size(mp_obj_t self_in);
-STATIC mp_obj_t micro_ecc_Curve_private_key_size(mp_obj_t self_in);
-STATIC mp_obj_t micro_ecc_Curve_public_key_size(mp_obj_t self_in);
 STATIC mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in);
 STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_key_in, mp_obj_t private_key_in);
-#if uECC_SUPPORT_COMPRESSED_POINT
-STATIC mp_obj_t micro_ecc_Curve_compress(mp_obj_t self_in, mp_obj_t public_key_in);
-STATIC mp_obj_t micro_ecc_Curve_decompress(mp_obj_t self_in, mp_obj_t compressed_in);
-#endif /* uECC_SUPPORT_COMPRESSED_POINT */
 STATIC mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t public_key_in, mp_obj_t self_in);
 STATIC mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t private_key_in);
 STATIC mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, mp_obj_t message_hash_in);
 STATIC mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args);
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_curve_size_fun_obj, micro_ecc_Curve_curve_size);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_private_key_size_fun_obj, micro_ecc_Curve_private_key_size);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_public_key_size_fun_obj, micro_ecc_Curve_public_key_size);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_make_key_fun_obj, micro_ecc_Curve_make_key);
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_shared_secret_fun_obj, micro_ecc_Curve_shared_secret);
-#if uECC_SUPPORT_COMPRESSED_POINT
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_compress_fun_obj, micro_ecc_Curve_compress);
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_decompress_fun_obj, micro_ecc_Curve_decompress);
-#endif /* uECC_SUPPORT_COMPRESSED_POINT */
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_valid_public_key_fun_obj, micro_ecc_Curve_valid_public_key);
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_compute_public_key_fun_obj, micro_ecc_Curve_compute_public_key);
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_sign_fun_obj, micro_ecc_Curve_sign);
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(micro_ecc_Curve_verify_fun_obj, 4, 4, micro_ecc_Curve_verify);
 
 STATIC const mp_rom_map_elem_t micro_ecc_Curve_locals_dict_table[] = {
+#if uECC_CURVE == 1
+    { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp160r1)                          },
+#elif uECC_CURVE == 2
+    { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp192r1)                          },
+#elif uECC_CURVE == 3
+    { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp256r1)                          },
+#elif uECC_CURVE == 4
+    { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp256k1)                          },
+#elif uECC_CURVE == 5
+    { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp224r1)                          },
+#else
+    #error Unknown curve specified
+#endif
+    { MP_ROM_QSTR(MP_QSTR_curve_size),         MP_ROM_INT(uECC_BYTES)                                  },
+    { MP_ROM_QSTR(MP_QSTR_private_key_size),   MP_ROM_INT(uECC_PRIVATE_KEY_BYTES)                      },
+    { MP_ROM_QSTR(MP_QSTR_public_key_size),    MP_ROM_INT(uECC_PUBLIC_KEY_BYTES)                       },
+
     // class methods
-    { MP_ROM_QSTR(MP_QSTR_curve_size),         MP_ROM_PTR(&micro_ecc_Curve_curve_size_fun_obj)         },
-    { MP_ROM_QSTR(MP_QSTR_private_key_size),   MP_ROM_PTR(&micro_ecc_Curve_private_key_size_fun_obj)   },
-    { MP_ROM_QSTR(MP_QSTR_public_key_size),    MP_ROM_PTR(&micro_ecc_Curve_public_key_size_fun_obj)    },
     { MP_ROM_QSTR(MP_QSTR_make_key),           MP_ROM_PTR(&micro_ecc_Curve_make_key_fun_obj)           },
     { MP_ROM_QSTR(MP_QSTR_shared_secret),      MP_ROM_PTR(&micro_ecc_Curve_shared_secret_fun_obj)      },
     { MP_ROM_QSTR(MP_QSTR_valid_public_key),   MP_ROM_PTR(&micro_ecc_Curve_valid_public_key_fun_obj)   },
     { MP_ROM_QSTR(MP_QSTR_compute_public_key), MP_ROM_PTR(&micro_ecc_Curve_compute_public_key_fun_obj) },
     { MP_ROM_QSTR(MP_QSTR_sign),               MP_ROM_PTR(&micro_ecc_Curve_sign_fun_obj)               },
     { MP_ROM_QSTR(MP_QSTR_verify),             MP_ROM_PTR(&micro_ecc_Curve_verify_fun_obj)             },
-#if uECC_SUPPORT_COMPRESSED_POINT
-    { MP_ROM_QSTR(MP_QSTR_decompress),         MP_ROM_PTR(&micro_ecc_Curve_decompress_fun_obj)         },
-    { MP_ROM_QSTR(MP_QSTR_compress),           MP_ROM_PTR(&micro_ecc_Curve_compress_fun_obj)           },
-#endif /* uECC_SUPPORT_COMPRESSED_POINT */
 };
 STATIC MP_DEFINE_CONST_DICT(micro_ecc_Curve_locals_dict, micro_ecc_Curve_locals_dict_table);
-
 
 MP_DEFINE_CONST_OBJ_TYPE(
     micro_ecc_Curve_type,
@@ -125,50 +120,10 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
                                   size_t n_args,
                                   size_t n_kw,
                                   const mp_obj_t* args){
-    mp_arg_check_num(n_args, n_kw, 1, 1, false);
+    mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
     // raises MemoryError
     micro_ecc_Curve_obj_t* self = mp_obj_malloc(micro_ecc_Curve_obj_t, type);
-
-    size_t size;
-    const char* curve_name = mp_obj_str_get_data(args[0], &size);
-
-    self->curve_size = 0;
-
-#if uECC_SUPPORTS_secp160r1
-    if(size == 9 && strncmp(curve_name, "secp160r1", 9) == 0){
-        self->curve = uECC_secp160r1();
-        self->curve_size = 20;
-    }
-#endif
-#if uECC_SUPPORTS_secp192r1
-    if(size == 9 && strncmp(curve_name, "secp192r1", 9) == 0){
-        self->curve = uECC_secp192r1();
-        self->curve_size = 24;
-    }
-#endif
-#if uECC_SUPPORTS_secp224r1
-    if(size == 9 && strncmp(curve_name, "secp224r1", 9) == 0){
-        self->curve = uECC_secp224r1();
-        self->curve_size = 28;
-    }
-#endif
-#if uECC_SUPPORTS_secp256r1
-    if(size == 9 && strncmp(curve_name, "secp256r1", 9) == 0){
-        self->curve = uECC_secp256r1();
-        self->curve_size = 32;
-    }
-#endif
-#if uECC_SUPPORTS_secp256k1
-    if(size == 9 && strncmp(curve_name, "secp256k1", 9) == 0){
-        self->curve = uECC_secp256k1();
-        self->curve_size = 32;
-    }
-#endif
-
-    if(self->curve_size == 0){
-        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("Unknown curve specified: %s"), curve_name);
-    }
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -187,7 +142,7 @@ static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t
     size_t public_key_size;
     const char* public_key = mp_obj_str_get_data(public_key_in, &public_key_size);
 
-    if(public_key_size != (size_t)uECC_curve_public_key_size(self->curve)){
+    if(public_key_size != uECC_PUBLIC_KEY_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Public Key has the wrong size"));
     }
 
@@ -198,7 +153,7 @@ static const uint8_t* Curve_get_private_key(micro_ecc_Curve_obj_t* self, mp_obj_
     size_t private_key_size;
     const char* private_key = mp_obj_str_get_data(private_key_in, &private_key_size);
 
-    if(private_key_size != (size_t)uECC_curve_private_key_size(self->curve)){
+    if(private_key_size != uECC_PRIVATE_KEY_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Private Key has the wrong size"));
     }
 
@@ -206,49 +161,17 @@ static const uint8_t* Curve_get_private_key(micro_ecc_Curve_obj_t* self, mp_obj_
 }
 
 /**
- * Python: micro_ecc.Curve.curve_size(self)
- * @param self
- */
-STATIC mp_obj_t micro_ecc_Curve_curve_size(mp_obj_t self_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
-    return mp_obj_new_int(self->curve_size);
-}
-
-/**
- * Python: micro_ecc.Curve.private_key_size(self)
- * @param self
- */
-STATIC mp_obj_t micro_ecc_Curve_private_key_size(mp_obj_t self_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
-    return mp_obj_new_int(uECC_curve_private_key_size(self->curve));
-}
-
-/**
- * Python: micro_ecc.Curve.public_key_size(self)
- * @param self
- */
-STATIC mp_obj_t micro_ecc_Curve_public_key_size(mp_obj_t self_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
-    return mp_obj_new_int(uECC_curve_public_key_size(self->curve));
-}
-
-/**
  * Python: micro_ecc.Curve.make_key(self)
  * @param self
  */
 STATIC mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
     vstr_t vstr_public;
-    vstr_init_len(&vstr_public, uECC_curve_public_key_size(self->curve));
+    vstr_init_len(&vstr_public, uECC_PUBLIC_KEY_BYTES);
 
     vstr_t vstr_private;
-    vstr_init_len(&vstr_private, uECC_curve_private_key_size(self->curve));
+    vstr_init_len(&vstr_private, uECC_PRIVATE_KEY_BYTES);
 
-    int ret = uECC_make_key((uint8_t*)vstr_public.buf, (uint8_t*)vstr_private.buf, self->curve);
+    int ret = uECC_make_key((uint8_t*)vstr_public.buf, (uint8_t*)vstr_private.buf);
 
     if(ret != 1){
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("uECC_make_key() failed"));
@@ -276,12 +199,11 @@ STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_
     const uint8_t* private_key = Curve_get_private_key(self, private_key_in);
 
     vstr_t vstr;
-    vstr_init_len(&vstr, self->curve_size);
+    vstr_init_len(&vstr, uECC_BYTES);
 
     int ret = uECC_shared_secret(public_key,
                                  private_key,
-                                 (uint8_t*)vstr.buf,
-                                 self->curve);
+                                 (uint8_t*)vstr.buf);
 
     if(ret != 1){
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("uECC_shared_secret() failed"));
@@ -289,54 +211,6 @@ STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_
 
     return mp_obj_new_bytes_from_vstr(&vstr);
 }
-
-#if uECC_SUPPORT_COMPRESSED_POINT
-/**
- * Python: micro_ecc.Curve.compress(self, public_key)
- * @param self
- * @param public_key
- */
-STATIC mp_obj_t micro_ecc_Curve_compress(mp_obj_t self_in, mp_obj_t public_key_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
-    // raises TypeError, ValueError
-    const uint8_t* public_key = Curve_get_public_key(self, public_key_in);
-
-    vstr_t vstr;
-    vstr_init_len(&vstr, self->curve_size + 1);
-
-    uECC_compress(public_key, (uint8_t*)vstr.buf, self->curve);
-
-    return mp_obj_new_bytes_from_vstr(&vstr);
-}
-
-
-/**
- * Python: micro_ecc.Curve.decompress(self, compressed)
- * @param self
- * @param compressed
- */
-STATIC mp_obj_t micro_ecc_Curve_decompress(mp_obj_t self_in, mp_obj_t compressed_in){
-    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-
-    size_t compressed_size;
-    const uint8_t* compressed;
-
-    // raises TypeError
-    micro_ecc_mp_obj_get_data(compressed_in, &compressed, &compressed_size);
-
-    if(compressed_size != (self->curve_size + 1)){
-        mp_raise_ValueError(MP_ERROR_TEXT("Compressed Public Key has the wrong size"));
-    }
-
-    vstr_t vstr;
-    vstr_init_len(&vstr, uECC_curve_public_key_size(self->curve));
-
-    uECC_decompress(compressed, (uint8_t*)vstr.buf, self->curve);
-
-    return mp_obj_new_bytes_from_vstr(&vstr);
-}
-#endif /* uECC_SUPPORT_COMPRESSED_POINT */
 
 /**
  * Python: micro_ecc.Curve.valid_public_key(self, public_key)
@@ -349,7 +223,7 @@ STATIC mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t self_in, mp_obj_t publ
     // raises TypeError, ValueError
     const uint8_t* public_key = Curve_get_public_key(self, public_key_in);
 
-    return mp_obj_new_bool(uECC_valid_public_key(public_key, self->curve));
+    return mp_obj_new_bool(uECC_valid_public_key(public_key));
 }
 
 /**
@@ -364,11 +238,10 @@ STATIC mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t pr
     const uint8_t* private_key = Curve_get_private_key(self, private_key_in);
 
     vstr_t vstr;
-    vstr_init_len(&vstr, uECC_curve_public_key_size(self->curve));
+    vstr_init_len(&vstr, uECC_PUBLIC_KEY_BYTES);
 
     int ret = uECC_compute_public_key(private_key,
-                                      (uint8_t*)vstr.buf,
-                                      self->curve);
+                                      (uint8_t*)vstr.buf);
 
     if(ret != 1){
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("uECC_compute_public_key() failed"));
@@ -395,14 +268,16 @@ STATIC mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, 
     // raises TypeError
     micro_ecc_mp_obj_get_data(message_hash_in, &message_hash, &hash_size);
 
+    if(hash_size != uECC_BYTES){
+        mp_raise_ValueError(MP_ERROR_TEXT("Hash has the wrong size"));
+    }
+
     vstr_t vstr;
-    vstr_init_len(&vstr, self->curve_size * 2);
+    vstr_init_len(&vstr, uECC_BYTES * 2);
 
     int ret = uECC_sign(private_key,
                         message_hash,
-                        hash_size,
-                        (uint8_t*)vstr.buf,
-                        self->curve);
+                        (uint8_t*)vstr.buf);
 
     if(ret != 1){
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("uECC_compute_public_key() failed"));
@@ -430,55 +305,30 @@ STATIC mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args){
     // raises TypeError
     micro_ecc_mp_obj_get_data(args[2], &message_hash, &hash_size);
 
+    if(hash_size != uECC_BYTES){
+        mp_raise_ValueError(MP_ERROR_TEXT("Hash has the wrong size"));
+    }
+
     size_t signature_size;
     const uint8_t* signature;
 
     // raises TypeError
     micro_ecc_mp_obj_get_data(args[3], &signature, &signature_size);
 
-    if(signature_size != (self->curve_size * 2)){
+    if(signature_size != (uECC_BYTES * 2)){
         mp_raise_ValueError(MP_ERROR_TEXT("Signature has the wrong size"));
     }
 
     int ret = uECC_verify(public_key,
                           message_hash,
-                          hash_size,
-                          signature,
-                          self->curve);
+                          signature);
 
     return mp_obj_new_bool(ret);
 }
 
-/**
- * Python: micro_ecc.curves()
- */
-STATIC mp_obj_t micro_ecc_curves(void){
-    mp_obj_t tuple[] = {
-#if uECC_SUPPORTS_secp160r1
-        MP_ROM_QSTR(MP_QSTR_secp160r1),
-#endif
-#if uECC_SUPPORTS_secp192r1
-        MP_ROM_QSTR(MP_QSTR_secp192r1),
-#endif
-#if uECC_SUPPORTS_secp224r1
-        MP_ROM_QSTR(MP_QSTR_secp224r1),
-#endif
-#if uECC_SUPPORTS_secp256r1
-        MP_ROM_QSTR(MP_QSTR_secp256r1),
-#endif
-#if uECC_SUPPORTS_secp256k1
-        MP_ROM_QSTR(MP_QSTR_secp256k1),
-#endif
-    };
-
-    return mp_obj_new_tuple(MP_ARRAY_SIZE(tuple), tuple);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(micro_ecc_curves_fun_obj, micro_ecc_curves);
-
 
 STATIC const mp_rom_map_elem_t micro_ecc_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_uECC)             },
-    { MP_ROM_QSTR(MP_QSTR_curves),   MP_ROM_PTR(&micro_ecc_curves_fun_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_Curve),    MP_ROM_PTR(&micro_ecc_Curve_type)     },
 };
