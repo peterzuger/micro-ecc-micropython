@@ -43,6 +43,20 @@
 #define uECC_PUBLIC_KEY_BYTES ((size_t)(uECC_BYTES * 2))
 #define uECC_PRIVATE_KEY_BYTES ((size_t)(uECC_BYTES))
 
+#if uECC_CURVE == 1
+#define uECC_CURVE_NAME "secp160r1"
+#elif uECC_CURVE == 2
+#define uECC_CURVE_NAME "secp192r1"
+#elif uECC_CURVE == 3
+#define uECC_CURVE_NAME "secp256r1"
+#elif uECC_CURVE == 4
+#define uECC_CURVE_NAME "secp256k1"
+#elif uECC_CURVE == 5
+#define uECC_CURVE_NAME "secp224r1"
+#else
+#error Unknown curve specified
+#endif
+
 static void micro_ecc_mp_obj_get_data(mp_obj_t data_p, const uint8_t** data, size_t* size){
     if(mp_obj_is_type(data_p, &mp_type_bytearray) || mp_obj_is_type(data_p, &mp_type_memoryview)){
         *data = (const uint8_t*)((mp_obj_array_t*)data_p)->items;
@@ -135,7 +149,7 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
 STATIC void micro_ecc_Curve_print(const mp_print_t* print,
                                   mp_obj_t self_in, mp_print_kind_t kind){
     //micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "Curve()");
+    mp_printf(print, "Curve(" uECC_CURVE_NAME ")");
 }
 
 static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t public_key_in){
