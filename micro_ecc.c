@@ -131,6 +131,8 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
     micro_ecc_Curve_obj_t* self = mp_obj_malloc(micro_ecc_Curve_obj_t, type);
 
     size_t size;
+
+    // raises TypeError
     const char* curve_name = mp_obj_str_get_data(args[0], &size);
 
     self->curve_size = 0;
@@ -187,6 +189,8 @@ STATIC void micro_ecc_Curve_print(const mp_print_t* print,
 
 static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t public_key_in){
     size_t public_key_size;
+
+    // raises TypeError
     const char* public_key = mp_obj_str_get_data(public_key_in, &public_key_size);
 
     if(public_key_size != (size_t)uECC_curve_public_key_size(self->curve)){
@@ -198,6 +202,8 @@ static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t
 
 static const uint8_t* Curve_get_private_key(micro_ecc_Curve_obj_t* self, mp_obj_t private_key_in){
     size_t private_key_size;
+
+    // raises TypeError
     const char* private_key = mp_obj_str_get_data(private_key_in, &private_key_size);
 
     if(private_key_size != (size_t)uECC_curve_private_key_size(self->curve)){
