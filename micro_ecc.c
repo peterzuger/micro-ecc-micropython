@@ -135,36 +135,38 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
 
     self->curve_size = 0;
 
+    if(size == 9){
 #if uECC_SUPPORTS_secp160r1
-    if(size == 9 && strncmp(curve_name, "secp160r1", 9) == 0){
-        self->curve = uECC_secp160r1();
-        self->curve_size = 20;
-    }
+        if(strncmp(curve_name, "secp160r1", 9) == 0){
+            self->curve = uECC_secp160r1();
+            self->curve_size = 20;
+        }
 #endif
 #if uECC_SUPPORTS_secp192r1
-    if(size == 9 && strncmp(curve_name, "secp192r1", 9) == 0){
-        self->curve = uECC_secp192r1();
-        self->curve_size = 24;
-    }
+        if(strncmp(curve_name, "secp192r1", 9) == 0){
+            self->curve = uECC_secp192r1();
+            self->curve_size = 24;
+        }
 #endif
 #if uECC_SUPPORTS_secp224r1
-    if(size == 9 && strncmp(curve_name, "secp224r1", 9) == 0){
-        self->curve = uECC_secp224r1();
-        self->curve_size = 28;
-    }
+        if(strncmp(curve_name, "secp224r1", 9) == 0){
+            self->curve = uECC_secp224r1();
+            self->curve_size = 28;
+        }
 #endif
 #if uECC_SUPPORTS_secp256r1
-    if(size == 9 && strncmp(curve_name, "secp256r1", 9) == 0){
-        self->curve = uECC_secp256r1();
-        self->curve_size = 32;
-    }
+        if(strncmp(curve_name, "secp256r1", 9) == 0){
+            self->curve = uECC_secp256r1();
+            self->curve_size = 32;
+        }
 #endif
 #if uECC_SUPPORTS_secp256k1
-    if(size == 9 && strncmp(curve_name, "secp256k1", 9) == 0){
-        self->curve = uECC_secp256k1();
-        self->curve_size = 32;
-    }
+        if(strncmp(curve_name, "secp256k1", 9) == 0){
+            self->curve = uECC_secp256k1();
+            self->curve_size = 32;
+        }
 #endif
+    }
 
     if(self->curve_size == 0){
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("Unknown curve specified: %s"), curve_name);
