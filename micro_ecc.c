@@ -57,6 +57,7 @@ typedef struct _micro_ecc_Curve_obj_t{
 
     uECC_Curve curve;
     size_t curve_size;
+    char curve_name[10];
 }micro_ecc_Curve_obj_t;
 
 
@@ -138,6 +139,7 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
     self->curve_size = 0;
 
     if(size == 9){
+        strncpy(self->curve_name, curve_name, 9);
 #if uECC_SUPPORTS_secp160r1
         if(strncmp(curve_name, "secp160r1", 9) == 0){
             self->curve = uECC_secp160r1();
@@ -183,8 +185,8 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
  */
 STATIC void micro_ecc_Curve_print(const mp_print_t* print,
                                   mp_obj_t self_in, mp_print_kind_t kind){
-    //micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "Curve()");
+    micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
+    mp_printf(print, "Curve(%s)", self->curve_name);
 }
 
 static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t public_key_in){
