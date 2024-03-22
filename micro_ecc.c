@@ -75,22 +75,22 @@ typedef struct _micro_ecc_Curve_obj_t{
 
 
 mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type, size_t n_args, size_t n_kw, const mp_obj_t* args);
-STATIC void micro_ecc_Curve_print(const mp_print_t* print, mp_obj_t self_in, mp_print_kind_t kind);
-STATIC mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in);
-STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_key_in, mp_obj_t private_key_in);
-STATIC mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t public_key_in, mp_obj_t self_in);
-STATIC mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t private_key_in);
-STATIC mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, mp_obj_t message_hash_in);
-STATIC mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args);
+static void micro_ecc_Curve_print(const mp_print_t* print, mp_obj_t self_in, mp_print_kind_t kind);
+static mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in);
+static mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_key_in, mp_obj_t private_key_in);
+static mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t public_key_in, mp_obj_t self_in);
+static mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t private_key_in);
+static mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, mp_obj_t message_hash_in);
+static mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args);
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_make_key_fun_obj, micro_ecc_Curve_make_key);
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_shared_secret_fun_obj, micro_ecc_Curve_shared_secret);
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_valid_public_key_fun_obj, micro_ecc_Curve_valid_public_key);
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_compute_public_key_fun_obj, micro_ecc_Curve_compute_public_key);
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_sign_fun_obj, micro_ecc_Curve_sign);
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(micro_ecc_Curve_verify_fun_obj, 4, 4, micro_ecc_Curve_verify);
+static MP_DEFINE_CONST_FUN_OBJ_1(micro_ecc_Curve_make_key_fun_obj, micro_ecc_Curve_make_key);
+static MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_shared_secret_fun_obj, micro_ecc_Curve_shared_secret);
+static MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_valid_public_key_fun_obj, micro_ecc_Curve_valid_public_key);
+static MP_DEFINE_CONST_FUN_OBJ_2(micro_ecc_Curve_compute_public_key_fun_obj, micro_ecc_Curve_compute_public_key);
+static MP_DEFINE_CONST_FUN_OBJ_3(micro_ecc_Curve_sign_fun_obj, micro_ecc_Curve_sign);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(micro_ecc_Curve_verify_fun_obj, 4, 4, micro_ecc_Curve_verify);
 
-STATIC const mp_rom_map_elem_t micro_ecc_Curve_locals_dict_table[] = {
+static const mp_rom_map_elem_t micro_ecc_Curve_locals_dict_table[] = {
 #if uECC_CURVE == 1
     { MP_ROM_QSTR(MP_QSTR_curve),              MP_ROM_QSTR(MP_QSTR_secp160r1)                          },
 #elif uECC_CURVE == 2
@@ -116,7 +116,7 @@ STATIC const mp_rom_map_elem_t micro_ecc_Curve_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_sign),               MP_ROM_PTR(&micro_ecc_Curve_sign_fun_obj)               },
     { MP_ROM_QSTR(MP_QSTR_verify),             MP_ROM_PTR(&micro_ecc_Curve_verify_fun_obj)             },
 };
-STATIC MP_DEFINE_CONST_DICT(micro_ecc_Curve_locals_dict, micro_ecc_Curve_locals_dict_table);
+static MP_DEFINE_CONST_DICT(micro_ecc_Curve_locals_dict, micro_ecc_Curve_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     micro_ecc_Curve_type,
@@ -146,7 +146,7 @@ mp_obj_t micro_ecc_Curve_make_new(const mp_obj_type_t* type,
  * Python: print(micro_ecc.Curve())
  * @param obj
  */
-STATIC void micro_ecc_Curve_print(const mp_print_t* print,
+static void micro_ecc_Curve_print(const mp_print_t* print,
                                   mp_obj_t self_in, mp_print_kind_t kind){
     //micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "Curve(" uECC_CURVE_NAME ")");
@@ -178,7 +178,7 @@ static const uint8_t* Curve_get_private_key(micro_ecc_Curve_obj_t* self, mp_obj_
  * Python: micro_ecc.Curve.make_key(self)
  * @param self
  */
-STATIC mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in){
+static mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in){
     vstr_t vstr_public;
     vstr_init_len(&vstr_public, uECC_PUBLIC_KEY_BYTES);
 
@@ -205,7 +205,7 @@ STATIC mp_obj_t micro_ecc_Curve_make_key(mp_obj_t self_in){
  * @param public_key
  * @param private_key
  */
-STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_key_in, mp_obj_t private_key_in){
+static mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_key_in, mp_obj_t private_key_in){
     micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
 
     // raises TypeError, ValueError
@@ -231,7 +231,7 @@ STATIC mp_obj_t micro_ecc_Curve_shared_secret(mp_obj_t self_in, mp_obj_t public_
  * @param self
  * @param public_key
  */
-STATIC mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t self_in, mp_obj_t public_key_in){
+static mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t self_in, mp_obj_t public_key_in){
     micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
 
     // raises TypeError, ValueError
@@ -245,7 +245,7 @@ STATIC mp_obj_t micro_ecc_Curve_valid_public_key(mp_obj_t self_in, mp_obj_t publ
  * @param self
  * @param private_key
  */
-STATIC mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t private_key_in){
+static mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t private_key_in){
     micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
 
     // raises TypeError, ValueError
@@ -270,7 +270,7 @@ STATIC mp_obj_t micro_ecc_Curve_compute_public_key(mp_obj_t self_in, mp_obj_t pr
  * @param private_key
  * @param message_hash
  */
-STATIC mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, mp_obj_t message_hash_in){
+static mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, mp_obj_t message_hash_in){
     micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(self_in);
 
     // raises TypeError, ValueError
@@ -307,7 +307,7 @@ STATIC mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, 
  * @param args[2] message_hash
  * @param args[3] signature
  */
-STATIC mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args){
+static mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args){
     micro_ecc_Curve_obj_t* self = MP_OBJ_TO_PTR(args[0]);
 
     // raises TypeError, ValueError
@@ -341,13 +341,13 @@ STATIC mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args){
 }
 
 
-STATIC const mp_rom_map_elem_t micro_ecc_globals_table[] = {
+static const mp_rom_map_elem_t micro_ecc_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_uECC)             },
 
     { MP_ROM_QSTR(MP_QSTR_Curve),    MP_ROM_PTR(&micro_ecc_Curve_type)     },
 };
 
-STATIC MP_DEFINE_CONST_DICT(
+static MP_DEFINE_CONST_DICT(
     mp_module_micro_ecc_globals,
     micro_ecc_globals_table
     );
