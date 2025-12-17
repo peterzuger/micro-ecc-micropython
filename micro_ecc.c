@@ -57,16 +57,6 @@
 #error Unknown curve specified
 #endif
 
-static void micro_ecc_mp_obj_get_data(mp_obj_t data_p, const uint8_t** data, size_t* size){
-    if(mp_obj_is_type(data_p, &mp_type_bytearray) || mp_obj_is_type(data_p, &mp_type_memoryview)){
-        *data = (const uint8_t*)((mp_obj_array_t*)data_p)->items;
-        *size = ((mp_obj_array_t*)data_p)->len;
-    }else{
-        // raises TypeError
-        *data = (const uint8_t*)mp_obj_str_get_data(data_p, size);
-    }
-}
-
 
 typedef struct _micro_ecc_Curve_obj_t{
     // base represents some basic information, like type
@@ -153,25 +143,29 @@ static void micro_ecc_Curve_print(const mp_print_t* print,
 }
 
 static const uint8_t* Curve_get_public_key(micro_ecc_Curve_obj_t* self, mp_obj_t public_key_in){
-    size_t public_key_size;
-    const char* public_key = mp_obj_str_get_data(public_key_in, &public_key_size);
+    mp_buffer_info_t public_key;
 
-    if(public_key_size != uECC_PUBLIC_KEY_BYTES){
+    // raises TypeError
+    mp_get_buffer_raise(public_key_in, &public_key, MP_BUFFER_READ);
+
+    if(public_key.len != uECC_PUBLIC_KEY_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Public Key has the wrong size"));
     }
 
-    return (const uint8_t*)public_key;
+    return (const uint8_t*)public_key.buf;
 }
 
 static const uint8_t* Curve_get_private_key(micro_ecc_Curve_obj_t* self, mp_obj_t private_key_in){
-    size_t private_key_size;
-    const char* private_key = mp_obj_str_get_data(private_key_in, &private_key_size);
+    mp_buffer_info_t private_key;
 
-    if(private_key_size != uECC_PRIVATE_KEY_BYTES){
+    // raises TypeError
+    mp_get_buffer_raise(private_key_in, &private_key, MP_BUFFER_READ);
+
+    if(private_key.len != uECC_PRIVATE_KEY_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Private Key has the wrong size"));
     }
 
-    return (const uint8_t*)private_key;
+    return (const uint8_t*)private_key.buf;
 }
 
 /**
@@ -276,13 +270,12 @@ static mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, 
     // raises TypeError, ValueError
     const uint8_t* private_key = Curve_get_private_key(self, private_key_in);
 
-    size_t hash_size;
-    const uint8_t* message_hash;
+    mp_buffer_info_t message_hash;
 
     // raises TypeError
-    micro_ecc_mp_obj_get_data(message_hash_in, &message_hash, &hash_size);
+    mp_get_buffer_raise(message_hash_in, &message_hash, MP_BUFFER_READ);
 
-    if(hash_size != uECC_BYTES){
+    if(message_hash.len != uECC_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Hash has the wrong size"));
     }
 
@@ -290,7 +283,7 @@ static mp_obj_t micro_ecc_Curve_sign(mp_obj_t self_in, mp_obj_t private_key_in, 
     vstr_init_len(&vstr, uECC_BYTES * 2);
 
     int ret = uECC_sign(private_key,
-                        message_hash,
+                        message_hash.buf,
                         (uint8_t*)vstr.buf);
 
     if(ret != 1){
@@ -313,29 +306,27 @@ static mp_obj_t micro_ecc_Curve_verify(size_t n_args, const mp_obj_t* args){
     // raises TypeError, ValueError
     const uint8_t* public_key = Curve_get_public_key(self, args[1]);
 
-    size_t hash_size;
-    const uint8_t* message_hash;
+    mp_buffer_info_t message_hash;
 
     // raises TypeError
-    micro_ecc_mp_obj_get_data(args[2], &message_hash, &hash_size);
+    mp_get_buffer_raise(args[2], &message_hash, MP_BUFFER_READ);
 
-    if(hash_size != uECC_BYTES){
+    if(message_hash.len != uECC_BYTES){
         mp_raise_ValueError(MP_ERROR_TEXT("Hash has the wrong size"));
     }
 
-    size_t signature_size;
-    const uint8_t* signature;
+    mp_buffer_info_t signature;
 
     // raises TypeError
-    micro_ecc_mp_obj_get_data(args[3], &signature, &signature_size);
+    mp_get_buffer_raise(args[3], &signature, MP_BUFFER_READ);
 
-    if(signature_size != (uECC_BYTES * 2)){
+    if(signature.len != (uECC_BYTES * 2)){
         mp_raise_ValueError(MP_ERROR_TEXT("Signature has the wrong size"));
     }
 
     int ret = uECC_verify(public_key,
-                          message_hash,
-                          signature);
+                          message_hash.buf,
+                          signature.buf);
 
     return mp_obj_new_bool(ret);
 }
